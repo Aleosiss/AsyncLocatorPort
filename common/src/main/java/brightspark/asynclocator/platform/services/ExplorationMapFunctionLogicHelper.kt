@@ -9,16 +9,16 @@ import net.minecraft.world.level.saveddata.maps.MapDecorationType
 import java.util.UUID
 
 interface ExplorationMapFunctionLogicHelper {
-  fun invalidateMap(mapStack: ItemStack?, level: ServerLevel?, pos: BlockPos?, uuid: UUID?)
+  fun invalidateMap(mapStack: ItemStack, level: ServerLevel, invPos: BlockPos, asyncId: UUID)
 
   fun updateMap(
-    mapStack: ItemStack?,
-    level: ServerLevel?,
-    pos: BlockPos?,
+    mapStack: ItemStack,
+    level: ServerLevel,
+    pos: BlockPos,
     scale: Int,
-    destinationType: Holder<MapDecorationType?>?,
-    invPos: BlockPos?,
-    displayName: Component?,
-    asyncId: UUID?
+    destinationType: Holder<MapDecorationType>,
+    invPos: BlockPos,
+    displayName: Component,
+    asyncId: UUID
   )
 }

@@ -15,10 +15,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "brightspark.asynclocator.fabric.AsyncLocatorModFabric"
-    ],
-    "client": [
-      "brightspark.asynclocator.fabric.client.AsyncLocatorModFabricClient"
+      {
+        "adapter": "kotlin",
+        "value":"brightspark.asynclocator.fabric.AsyncLocatorModFabric"
+      }
     ]
   },
   "mixins": [
@@ -29,7 +29,8 @@
     "minecraft": "~1.21.1",
     "java": ">=21",
     "architectury": ">=13.0.8",
-    "fabric-api": "*"
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.13.3+kotlin.2.1.21"
   },
   "suggests": {
     "another-mod": "*"

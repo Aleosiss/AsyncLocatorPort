@@ -1,12 +1,11 @@
 package brightspark.asynclocator.logic
 
-import brightspark.asynclocator.ALConstants
-import brightspark.asynclocator.AsyncLocator.LocateTask.thenOnServerThread
 import brightspark.asynclocator.AsyncLocator.locateStructure
+import brightspark.asynclocator.AsyncLocatorMod.CONFIG
+import brightspark.asynclocator.extensions.LOG
+import brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING_MANAGED
 import brightspark.asynclocator.logic.CommonLogic.updateMap
 import brightspark.asynclocator.mixins.MerchantOfferAccess
-import brightspark.asynclocator.platform.Services
-import com.mojang.datafixers.util.Pair
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderSet
@@ -25,65 +24,59 @@ import net.minecraft.world.item.trading.MerchantOffer
 import net.minecraft.world.level.levelgen.structure.Structure
 import net.minecraft.world.level.saveddata.maps.MapDecorationType
 import java.util.Optional
-import java.util.function.Consumer
 
 object MerchantLogic {
-  @Deprecated("Use {@link CommonLogic#createEmptyMap()} instead")
-  fun createEmptyMap(): ItemStack {
-    return CommonLogic.createEmptyMap()
-  }
 
+  @JvmStatic
   fun invalidateMap(merchant: AbstractVillager, mapStack: ItemStack) {
     mapStack.set(DataComponents.ITEM_NAME, Component.translatable("item.minecraft.map"))
     merchant.offers
-      .stream()
-      .filter { offer: MerchantOffer -> offer.result == mapStack }
-      .findFirst()
-      .ifPresentOrElse(
-        Consumer<MerchantOffer> { offer: MerchantOffer -> removeOffer(merchant, offer) }
-      ) { ALConstants.logWarn("Failed to find merchant offer for map") }
+      .firstOrNull { offer: MerchantOffer -> offer.result == mapStack }
+      ?.let { removeOffer(merchant, it) }
+      ?: run { LOG.warn("No merchant map offer found for stack {}", mapStack) }
   }
 
-  fun removeOffer(merchant: AbstractVillager, offer: MerchantOffer) {
-    if (Services.CONFIG.removeOffer()) {
-      if (merchant.offers.remove(offer)) ALConstants.logInfo("Removed merchant map offer")
-      else ALConstants.logWarn("Failed to remove merchant map offer")
+  private fun removeOffer(merchant: AbstractVillager, offer: MerchantOffer) {
+    if (CONFIG.removeOffer.get()) {
+      if (merchant.offers.remove(offer)) {
+        LOG.info("Removed merchant map offer")
+      } else {
+        LOG.warn("Failed to remove merchant map offer")
+      }
     } else {
       (offer as MerchantOfferAccess).setMaxUses(0)
       offer.setToOutOfStock()
-      ALConstants.logInfo("Marked merchant map offer as out of stock")
+      LOG.info("Marked merchant map offer as out of stock")
     }
   }
 
-  fun tickMerchantOffers(level: ServerLevel?, merchant: AbstractVillager) {
-    merchant.offers
-      .stream()
-      .map { obj: MerchantOffer -> obj.result }
-      .filter { result: ItemStack -> result.`is`(Items.FILLED_MAP) }
-      .forEach { offer: ItemStack ->
-        offer.inventoryTick(level, merchant, -1, false)
-      }
-  }
+  @JvmStatic
+  fun tickMerchantOffers(level: ServerLevel, merchant: AbstractVillager) = merchant.offers
+    .map { it.result }
+    .filter { it.`is`(Items.FILLED_MAP) }
+    .filter { it.get(DataComponents.CUSTOM_DATA)?.contains(KEY_LOCATING_MANAGED) == true }
+    .forEach { it.inventoryTick(level, merchant, -1, false) }
 
-  fun handleLocationFound(
+  private fun handleLocationFound(
     level: ServerLevel,
     merchant: AbstractVillager,
     mapStack: ItemStack,
     displayName: String?,
-    destinationType: Holder<MapDecorationType?>,
+    destinationType: Holder<MapDecorationType>,
     pos: BlockPos?
   ) {
     if (pos == null) {
-      ALConstants.logInfo("No location found - invalidating merchant offer")
+      LOG.info("No location found - invalidating merchant offer")
 
       invalidateMap(merchant, mapStack)
     } else {
-      ALConstants.logInfo("Location found - updating treasure map in merchant offer")
+      LOG.info("Location found - updating treasure map in merchant offer")
       updateMap(mapStack, level, pos, 2, destinationType, displayName)
     }
 
-    if (merchant.tradingPlayer is ServerPlayer) {
-      ALConstants.logInfo("Player {} currently trading - updating merchant offers", tradingPlayer)
+    val tradingPlayer = merchant.tradingPlayer
+    if (tradingPlayer is ServerPlayer) {
+      LOG.info("Player {} currently trading - updating merchant offers", tradingPlayer)
 
       tradingPlayer.sendMerchantOffers(
         tradingPlayer.containerMenu.containerId,
@@ -100,60 +93,40 @@ object MerchantLogic {
     pTrader: Entity,
     emeraldCost: Int,
     displayName: String?,
-    destinationType: Holder<MapDecorationType?>,
+    destinationType: Holder<MapDecorationType>,
     maxUses: Int,
     villagerXp: Int,
-    destination: TagKey<Structure?>
+    destination: TagKey<Structure>
   ): MerchantOffer? {
     return updateMapAsyncInternal(
       pTrader,
       emeraldCost,
       maxUses,
-      villagerXp,
-      MapUpdateTask { level: ServerLevel, merchant: AbstractVillager, mapStack: ItemStack ->
-        locateStructure(level, destination, merchant.blockPosition(), 100, true)
-          .thenOnServerThread(Consumer { pos: BlockPos? ->
-            handleLocationFound(
-              level,
-              merchant,
-              mapStack,
-              displayName,
-              destinationType,
-              pos
-            )
-          })
-      }
-    )
+      villagerXp
+    ) { level: ServerLevel, merchant: AbstractVillager, mapStack: ItemStack ->
+      locateStructure(level, destination, merchant.blockPosition(), 100, true)
+        .thenOnServerThread { handleLocationFound(level, merchant, mapStack, displayName, destinationType, it) }
+    }
   }
 
   fun updateMapAsync(
     pTrader: Entity,
     emeraldCost: Int,
     displayName: String?,
-    destinationType: Holder<MapDecorationType?>,
+    destinationType: Holder<MapDecorationType>,
     maxUses: Int,
     villagerXp: Int,
-    structureSet: HolderSet<Structure?>
+    structureSet: HolderSet<Structure>
   ): MerchantOffer? {
     return updateMapAsyncInternal(
       pTrader,
       emeraldCost,
       maxUses,
-      villagerXp,
-      MapUpdateTask { level: ServerLevel, merchant: AbstractVillager, mapStack: ItemStack ->
-        locateStructure(level, structureSet, merchant.blockPosition(), 100, true)
-          .thenOnServerThread(Consumer { pair: Pair<BlockPos?, Holder<Structure?>?> ->
-            handleLocationFound(
-              level,
-              merchant,
-              mapStack,
-              displayName,
-              destinationType,
-              pair.first
-            )
-          })
-      }
-    )
+      villagerXp
+    ) { level: ServerLevel, merchant: AbstractVillager, mapStack: ItemStack ->
+      locateStructure(level, structureSet, merchant.blockPosition(), 100, true)
+        .thenOnServerThread { handleLocationFound(level, merchant, mapStack, displayName, destinationType, it?.first) }
+    }
   }
 
   private fun updateMapAsyncInternal(
@@ -172,15 +145,12 @@ object MerchantLogic {
         0.2f
       )
     } else {
-      ALConstants.logInfo(
-        "Merchant is not of type {} - not running async logic",
-        AbstractVillager::class.java.simpleName
-      )
+      LOG.info("Merchant is not of type {} - not running async logic", AbstractVillager::class.java.simpleName)
       return null
     }
   }
 
-  interface MapUpdateTask {
-    fun apply(level: ServerLevel?, merchant: AbstractVillager?, mapStack: ItemStack?)
+  fun interface MapUpdateTask {
+    fun apply(level: ServerLevel, merchant: AbstractVillager, mapStack: ItemStack)
   }
 }

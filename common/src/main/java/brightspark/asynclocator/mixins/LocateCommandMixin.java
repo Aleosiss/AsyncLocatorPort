@@ -1,6 +1,6 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
+import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.logic.LocateCommandLogic;
 import brightspark.asynclocator.platform.Services;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
@@ -10,8 +10,6 @@ import net.minecraft.commands.arguments.ResourceOrTagArgument;
 import net.minecraft.commands.arguments.ResourceOrTagKeyArgument;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.commands.LocateCommand;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.util.Optional;
+import static brightspark.asynclocator.AsyncLocatorMod.INSTANCE;
 
 @Mixin(LocateCommand.class)
 public class LocateCommandMixin {
@@ -47,12 +45,12 @@ public class LocateCommandMixin {
 		Registry<Structure> registry,
 		HolderSet<Structure> holderset
 	) {
-		if (!Services.CONFIG.locateCommandEnabled()) return;
+		if (!INSTANCE.getCONFIG().getLocateCommandEnabled().get()) return;
 
 		CommandSource source = ((CommandSourceStackAccess) sourceStack).getSource();
 		if (source instanceof ServerPlayer || source instanceof MinecraftServer) {
-			ALConstants.logDebug("Intercepted LocateCommand#locate structure call");
-			LocateCommandLogic.locateStructureAsync(sourceStack, structureResult, holderset);
+			INSTANCE.getLOGGER().debug("Intercepted LocateCommand#locate structure call");
+			LocateCommandLogic.INSTANCE.locateStructureAsync(sourceStack, structureResult, holderset);
 			cir.setReturnValue(0);
 		}
 	}
@@ -70,12 +68,12 @@ public class LocateCommandMixin {
 			ResourceOrTagArgument.Result<Biome> biomeResult,
 			CallbackInfoReturnable<Integer> cir
 	) {
-		if (!Services.CONFIG.locateCommandEnabled()) return;
+		if (!INSTANCE.getCONFIG().getLocateCommandEnabled().get()) return;
 
 		CommandSource source = ((CommandSourceStackAccess) sourceStack).getSource();
 		if (source instanceof ServerPlayer || source instanceof MinecraftServer) {
-			ALConstants.logDebug("Intercepted LocateCommand#locate biome call");
-			LocateCommandLogic.locateBiomeAsync(sourceStack, biomeResult);
+			INSTANCE.getLOGGER().debug("Intercepted LocateCommand#locate biome call");
+			LocateCommandLogic.INSTANCE.locateBiomeAsync(sourceStack, biomeResult);
 			cir.setReturnValue(0);
 		}
 	}

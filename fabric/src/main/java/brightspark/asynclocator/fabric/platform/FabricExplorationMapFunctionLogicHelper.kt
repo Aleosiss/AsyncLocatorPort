@@ -1,6 +1,9 @@
 package brightspark.asynclocator.fabric.platform
 
-import brightspark.asynclocator.ALConstants
+import brightspark.asynclocator.MapManager
+import brightspark.asynclocator.extensions.LOG
+import brightspark.asynclocator.logic.CommonLogic
+import brightspark.asynclocator.platform.services.ExplorationMapFunctionLogicHelper
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.network.chat.Component
@@ -13,13 +16,9 @@ import java.util.UUID
 import java.util.function.BiConsumer
 
 class FabricExplorationMapFunctionLogicHelper : ExplorationMapFunctionLogicHelper {
-  override fun invalidateMap(mapStack: ItemStack?, level: ServerLevel, pos: BlockPos?, uuid: UUID?) {
-    handleUpdateMapInChest(
-      mapStack, level, pos, uuid
-    ) { chest: ChestBlockEntity, slot: Int? ->
-      chest.setItem(
-        slot!!, ItemStack(Items.MAP)
-      )
+  override fun invalidateMap(mapStack: ItemStack, level: ServerLevel, invPos: BlockPos, asyncId: UUID) {
+    handleUpdateMapInChest(mapStack, level, invPos, asyncId) { chest: ChestBlockEntity, slot: Int? ->
+      chest.setItem(slot!!, ItemStack(Items.MAP))
     }
   }
 
@@ -28,24 +27,22 @@ class FabricExplorationMapFunctionLogicHelper : ExplorationMapFunctionLogicHelpe
     level: ServerLevel,
     pos: BlockPos,
     scale: Int,
-    destinationType: Holder<MapDecorationType?>,
-    invPos: BlockPos?,
-    displayName: Component?,
-    asyncId: UUID?
+    destinationType: Holder<MapDecorationType>,
+    invPos: BlockPos,
+    displayName: Component,
+    asyncId: UUID
   ) {
     CommonLogic.updateMap(mapStack, level, pos, scale, destinationType, displayName)
     // Shouldn't need to set the stack in its slot again, as we're modifying the same instance
-    handleUpdateMapInChest(
-      mapStack, level, invPos, asyncId
-    ) { chest: ChestBlockEntity?, slot: Int? -> }
+    handleUpdateMapInChest(mapStack, level, invPos, asyncId) { _, _ -> }
   }
 
   companion object {
     private fun handleUpdateMapInChest(
-      mapStack: ItemStack?,
+      mapStack: ItemStack,
       level: ServerLevel,
-      invPos: BlockPos?,
-      asyncId: UUID?,
+      invPos: BlockPos,
+      asyncId: UUID,
       handleSlotFound: BiConsumer<ChestBlockEntity, Int>
     ) {
       val be = level.getBlockEntity(invPos)
@@ -56,15 +53,12 @@ class FabricExplorationMapFunctionLogicHelper : ExplorationMapFunctionLogicHelpe
             handleSlotFound.accept(be, i)
             CommonLogic.broadcastChestChanges(level, be)
             // since we found the map in the chest, no longer need the data in map manager
-            MapManager.getInstance().removeLocateOperation(asyncId)
+            MapManager.INSTANCE.removeLocateOperation(asyncId)
             return
           }
         }
       } else {
-        ALConstants.logWarn(
-          "Couldn't find chest block entity on block {} at {}",
-          level.getBlockState(invPos), invPos
-        )
+        LOG.warn("Couldn't find chest block entity on block {} at {}", level.getBlockState(invPos), invPos)
       }
     }
   }

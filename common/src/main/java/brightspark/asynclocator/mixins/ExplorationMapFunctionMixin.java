@@ -1,6 +1,6 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
+import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.logic.ExplorationMapFunctionLogic;
 import brightspark.asynclocator.platform.Services;
 import net.minecraft.core.BlockPos;
@@ -9,7 +9,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapDecorationType;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.functions.ExplorationMapFunction;
@@ -21,6 +20,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+import static brightspark.asynclocator.AsyncLocatorMod.INSTANCE;
 
 @Mixin(ExplorationMapFunction.class)
 public class ExplorationMapFunctionMixin {
@@ -60,11 +61,17 @@ public class ExplorationMapFunctionMixin {
 		Vec3 vec3,
 		ServerLevel serverlevel
 	) {
-		if (!Services.CONFIG.explorationMapEnabled()) return;
+		if (!INSTANCE.getCONFIG().getExplorationMapEnabled().get()) return;
 
-		ALConstants.logDebug("Intercepted ExplorationMapFunction#run call");
-		ItemStack mapStack = ExplorationMapFunctionLogic.updateMapAsync(
-			serverlevel, BlockPos.containing(vec3), zoom, searchRadius, skipKnownStructures, mapDecoration, destination
+		AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted ExplorationMapFunction#run call");
+		ItemStack mapStack = ExplorationMapFunctionLogic.INSTANCE.updateMapAsync(
+				serverlevel,
+				BlockPos.containing(vec3),
+				zoom,
+				searchRadius,
+				skipKnownStructures,
+				mapDecoration,
+				destination
 		);
 		cir.setReturnValue(mapStack);
 	}

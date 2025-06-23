@@ -1,8 +1,8 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
-import brightspark.asynclocator.logic.CommonLogic;
+import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.MapManager;
+import brightspark.asynclocator.logic.CommonLogic;
 import brightspark.asynclocator.logic.MerchantLogic;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -42,13 +42,13 @@ public class MapItemMixin {
             // get our shit together
             CompoundTag newCustomData = customData.copyTag();
             var asyncId = newCustomData.getUUID(KEY_LOCATING_MANAGED);
-            var mapManager = MapManager.getInstance();
+            var mapManager = MapManager.getINSTANCE();
 
             // get our locate
             var locate = mapManager.getLocateOperation(asyncId);
             // if we can't find it, clean up this map
             if (locate == null) {
-                ALConstants.logInfo("MapItemMixin#inventoryTick: No locate operation found for asyncId: " + asyncId);
+                AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: No locate operation found for asyncId: {}", asyncId);
                 newCustomData.remove(KEY_LOCATING_MANAGED);
                 is.set(DataComponents.ITEM_NAME, Component.translatable("item.minecraft.map"));
                 is.set(DataComponents.CUSTOM_DATA, CustomData.of(newCustomData));
@@ -57,7 +57,7 @@ public class MapItemMixin {
 
             // one-time initialization to set the name of the map
             if (!locate.initialized) {
-                ALConstants.logInfo("MapItemMixin#inventoryTick: Locate operation not initialized for asyncId: " + asyncId + ", initializing now.");
+                AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: Locate operation not initialized for asyncId: {}, initializing now.", asyncId);
                 mapManager.initializeLocateOperation(asyncId, getName(is));
                 is.set(DataComponents.ITEM_NAME, Component.translatable(MAP_HOVER_NAME_KEY));
             }
@@ -71,11 +71,11 @@ public class MapItemMixin {
             var success = locate.pos != null;
             if (success) {
                 // lfg
-                ALConstants.logInfo("MapItemMixin#inventoryTick: Found locate operation for asyncId: " + asyncId);
+                AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: Found locate operation for asyncId: {}", asyncId);
                 CommonLogic.updateMap(is, getServerLevel(level, locate.levelKey), locate.pos, locate.scale, locate.destinationType, locate.displayName);
             } else {
                 // if we don't have a position, we invalidate the map
-                ALConstants.logInfo("MapItemMixin#inventoryTick: Locate operation completed but no position found for asyncId: " + asyncId);
+                AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: Locate operation completed but no position found for asyncId: " + asyncId);
                 newCustomData.remove(KEY_LOCATING_MANAGED);
                 is.set(DataComponents.CUSTOM_DATA, CustomData.of(newCustomData));
                 if (entity instanceof Villager merchant) { MerchantLogic.invalidateMap(merchant, is); }
@@ -93,7 +93,7 @@ public class MapItemMixin {
 
     @Unique
     private static void pushOfferUpdate(Villager merchant, ServerPlayer tradingPlayer) {
-        ALConstants.logInfo("Player {} currently trading - updating merchant offers", tradingPlayer);
+        AsyncLocatorMod.INSTANCE.getLOGGER().info("Player {} currently trading - updating merchant offers", tradingPlayer);
 
         tradingPlayer.sendMerchantOffers(
                 tradingPlayer.containerMenu.containerId,

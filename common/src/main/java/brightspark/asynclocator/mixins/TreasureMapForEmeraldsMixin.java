@@ -1,6 +1,6 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
+import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.logic.MerchantLogic;
 import brightspark.asynclocator.platform.Services;
 import net.minecraft.core.Holder;
@@ -16,6 +16,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import static brightspark.asynclocator.AsyncLocatorMod.INSTANCE;
 
 @Mixin(targets = "net.minecraft.world.entity.npc.VillagerTrades$TreasureMapForEmeralds")
 public class TreasureMapForEmeraldsMixin {
@@ -61,11 +63,17 @@ public class TreasureMapForEmeraldsMixin {
 		RandomSource pRandom,
 		CallbackInfoReturnable<MerchantOffer> callbackInfo
 	) {
-		if (!Services.CONFIG.villagerTradeEnabled()) return;
+		if (!INSTANCE.getCONFIG().getVillagerTradeEnabled().get()) return;
 
-		ALConstants.logDebug("Intercepted TreasureMapForEmeralds#getOffer call");
-		MerchantOffer offer = MerchantLogic.updateMapAsync(
-			pTrader, emeraldCost, displayName, destinationType, maxUses, villagerXp, destination
+		AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted TreasureMapForEmeralds#getOffer call");
+		MerchantOffer offer = MerchantLogic.INSTANCE.updateMapAsync(
+				pTrader,
+				emeraldCost,
+				displayName,
+				destinationType,
+				maxUses,
+				villagerXp,
+				destination
 		);
 		if (offer != null) {
 			callbackInfo.setReturnValue(offer);

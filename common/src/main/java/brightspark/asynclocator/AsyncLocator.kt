@@ -1,6 +1,8 @@
 package brightspark.asynclocator
 
-import brightspark.asynclocator.platform.Services
+import brightspark.asynclocator.AsyncLocatorMod.CONFIG
+import brightspark.asynclocator.AsyncLocatorMod.MOD_ID
+import brightspark.asynclocator.extensions.LOG
 import com.mojang.datafixers.util.Pair
 import net.minecraft.commands.arguments.ResourceOrTagArgument
 import net.minecraft.core.BlockPos
@@ -12,7 +14,6 @@ import net.minecraft.tags.TagKey
 import net.minecraft.world.level.biome.Biome
 import net.minecraft.world.level.levelgen.structure.Structure
 import java.time.Duration
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -24,31 +25,30 @@ import java.util.function.Function
 import java.util.function.Supplier
 
 object AsyncLocator {
-  private var LOCATING_EXECUTOR_SERVICE: ExecutorService? = null
+  private var locatingExecutorService: ExecutorService? = null
 
   fun setupExecutorService() {
     shutdownExecutorService()
 
-    val threads = Services.CONFIG.locatorThreads()
+    val threads = CONFIG.locatorThreads.get()
     LOG.info("Starting locating executor service with thread pool size of {}", threads)
-    LOCATING_EXECUTOR_SERVICE = Executors.newFixedThreadPool(
-      threads,
-      object : ThreadFactory {
-        private val poolNum = AtomicInteger(1)
-        private val threadNum = AtomicInteger(1)
-        private val namePrefix: String = MOD_ID + "-" + poolNum.getAndIncrement() + "-thread-"
+    locatingExecutorService =
+      Executors.newFixedThreadPool(
+        threads,
+        object : ThreadFactory {
+          private val poolNum = AtomicInteger(1)
+          private val threadNum = AtomicInteger(1)
+          private val namePrefix: String = MOD_ID + "-" + poolNum.getAndIncrement() + "-thread-"
 
-        override fun newThread(r: Runnable): Thread {
-          return Thread(r, namePrefix + threadNum.getAndIncrement())
-        }
-      }
-    )
+          override fun newThread(r: Runnable): Thread = Thread(r, namePrefix + threadNum.getAndIncrement())
+        },
+      )
   }
 
   fun shutdownExecutorService() {
-    if (LOCATING_EXECUTOR_SERVICE != null) {
-      ALConstants.logInfo("Shutting down locating executor service")
-      LOCATING_EXECUTOR_SERVICE!!.shutdown()
+    if (locatingExecutorService != null) {
+      LOG.info("Shutting down locating executor service")
+      locatingExecutorService!!.shutdown()
     }
   }
 
@@ -61,27 +61,31 @@ object AsyncLocator {
     structureTag: TagKey<Structure>,
     pos: BlockPos,
     searchRadius: Int,
-    skipKnownStructures: Boolean
+    skipKnownStructures: Boolean,
   ): LocateTask<BlockPos?> {
-    ALConstants.logDebug(
+    LOG.debug(
       "Creating locate task for {} in {} around {} within {} chunks",
-      structureTag, level, pos, searchRadius
+      structureTag,
+      level,
+      pos,
+      searchRadius,
     )
     val completableFuture = CompletableFuture<BlockPos?>()
-    val future = LOCATING_EXECUTOR_SERVICE!!.submit {
-      try {
-        doLocateStructureLevel(
-          completableFuture,
-          level,
-          structureTag,
-          pos,
-          searchRadius,
-          skipKnownStructures
-        )
-      } catch (e: InterruptedException) {
-        throw RuntimeException(e)
+    val future =
+      locatingExecutorService!!.submit {
+        try {
+          doLocateStructureLevel(
+            completableFuture,
+            level,
+            structureTag,
+            pos,
+            searchRadius,
+            skipKnownStructures,
+          )
+        } catch (e: InterruptedException) {
+          throw RuntimeException(e)
+        }
       }
-    }
     return LocateTask(level.server, completableFuture, future)
   }
 
@@ -95,23 +99,27 @@ object AsyncLocator {
     structureSet: HolderSet<Structure>,
     pos: BlockPos,
     searchRadius: Int,
-    skipKnownStructures: Boolean
+    skipKnownStructures: Boolean,
   ): LocateTask<Pair<BlockPos, Holder<Structure>>?> {
-    ALConstants.logDebug(
+    LOG.info(
       "Creating locate task for {} in {} around {} within {} chunks",
-      structureSet, level, pos, searchRadius
+      structureSet,
+      level,
+      pos,
+      searchRadius,
     )
     val completableFuture = CompletableFuture<Pair<BlockPos, Holder<Structure>>?>()
-    val future = LOCATING_EXECUTOR_SERVICE!!.submit {
-      doLocateStructureChunkGenerator(
-        completableFuture,
-        level,
-        structureSet,
-        pos,
-        searchRadius,
-        skipKnownStructures
-      )
-    }
+    val future =
+      locatingExecutorService!!.submit {
+        doLocateStructureChunkGenerator(
+          completableFuture,
+          level,
+          structureSet,
+          pos,
+          searchRadius,
+          skipKnownStructures,
+        )
+      }
     return LocateTask(level.server, completableFuture, future)
   }
 
@@ -122,16 +130,20 @@ object AsyncLocator {
     structureTag: TagKey<Structure>,
     pos: BlockPos,
     searchRadius: Int,
-    skipExistingChunks: Boolean
+    skipExistingChunks: Boolean,
   ) {
-    ALConstants.logInfo(
+    LOG.info(
       "Trying to locate {} in {} around {} within {} chunks",
-      structureTag, level, pos, searchRadius
+      structureTag,
+      level,
+      pos,
+      searchRadius,
     )
 
-    val foundPos = executeSearchWithLogging(
-      structureTag
-    ) { level.findNearestMapStructure(structureTag, pos, searchRadius, skipExistingChunks) }
+    val foundPos =
+      executeSearchWithLogging(
+        structureTag,
+      ) { level.findNearestMapStructure(structureTag, pos, searchRadius, skipExistingChunks) }
     completableFuture.complete(foundPos)
   }
 
@@ -141,21 +153,25 @@ object AsyncLocator {
     structureSet: HolderSet<Structure>,
     pos: BlockPos,
     searchRadius: Int,
-    skipExistingChunks: Boolean
+    skipExistingChunks: Boolean,
   ) {
-    ALConstants.logInfo(
+    LOG.info(
       "Trying to locate {} in {} around {} within {} chunks",
-      structureSet, level, pos, searchRadius
+      structureSet,
+      level,
+      pos,
+      searchRadius,
     )
 
-    val foundPos = executeSearchWithLogging(
-      structureSet,
-      Supplier<Pair<BlockPos, Holder<Structure>>?> {
-        level.chunkSource.generator
-          .findNearestMapStructure(level, structureSet, pos, searchRadius, skipExistingChunks)
-      },
-      Function<Pair<BlockPos?, Holder<Structure?>?>?, BlockPos?> { pair: Pair<BlockPos?, Holder<Structure?>?>? -> pair?.first }
-    )
+    val foundPos =
+      executeSearchWithLogging(
+        structureSet,
+        {
+          level.chunkSource.generator
+            .findNearestMapStructure(level, structureSet, pos, searchRadius, skipExistingChunks)
+        },
+        { it?.first },
+      )
 
     completableFuture.complete(foundPos)
   }
@@ -164,28 +180,33 @@ object AsyncLocator {
    * Queues a task to locate a feature using [ServerLevel.findClosestBiome3d]
    * and returns a [LocateTask] with the futures for it.
    */
+  @JvmStatic
   fun locateBiome(
     level: ServerLevel,
-    biomeSet: ResourceOrTagArgument.Result<*>,
+    biomeSet: ResourceOrTagArgument.Result<Biome>,
     pos: BlockPos,
     searchRadius: Int,
-    skipKnownBiomes: Boolean
+    skipKnownBiomes: Boolean,
   ): LocateTask<Pair<BlockPos, Holder<Biome>>?> {
-    ALConstants.logDebug(
+    LOG.info(
       "Creating locate task for {} in {} around {} within {} chunks",
-      biomeSet, level, pos, searchRadius
+      biomeSet,
+      level,
+      pos,
+      searchRadius,
     )
     val completableFuture = CompletableFuture<Pair<BlockPos, Holder<Biome>>?>()
-    val future = LOCATING_EXECUTOR_SERVICE!!.submit {
-      doLocateBiome(
-        completableFuture,
-        level,
-        biomeSet,
-        pos,
-        searchRadius,
-        skipKnownBiomes
-      )
-    }
+    val future =
+      locatingExecutorService!!.submit {
+        doLocateBiome(
+          completableFuture,
+          level,
+          biomeSet,
+          pos,
+          searchRadius,
+          skipKnownBiomes,
+        )
+      }
     return LocateTask(level.server, completableFuture, future)
   }
 
@@ -195,54 +216,57 @@ object AsyncLocator {
     biomeSet: ResourceOrTagArgument.Result<Biome>,
     pos: BlockPos,
     searchRadius: Int,
-    skipExistingChunks: Boolean
+    skipExistingChunks: Boolean,
   ) {
-    ALConstants.logInfo(
+    LOG.info(
       "Trying to locate {} in {} around {} within {} chunks",
-      biomeSet, level, pos, searchRadius
+      biomeSet,
+      level,
+      pos,
+      searchRadius,
     )
 
-    val locate = executeSearchWithLogging(
-      biomeSet,
-      Supplier<Pair<BlockPos, Holder<Biome>>?> {
-        val radius = searchRadius * 16
-        val horizontalStep = 32
-        val verticalStep = 64
-        level.findClosestBiome3d(
-          biomeSet,
-          pos,
-          radius,
-          horizontalStep,
-          verticalStep
-        )
-      },
-      Function<Pair<BlockPos?, Holder<Biome?>?>?, BlockPos?> { result: Pair<BlockPos?, Holder<Biome?>?>? -> result?.first }
-    )
+    val locate =
+      executeSearchWithLogging(
+        biomeSet,
+        {
+          val radius = searchRadius * 16
+          val horizontalStep = 32
+          val verticalStep = 64
+          level.findClosestBiome3d(
+            biomeSet,
+            pos,
+            radius,
+            horizontalStep,
+            verticalStep,
+          )
+        },
+        { it?.first },
+      )
     completableFuture.complete(locate)
   }
 
-  private fun executeSearchWithLogging(searchTarget: Any, searchOperation: Supplier<BlockPos?>): BlockPos? {
-    return executeSearchWithLogging(
-      searchTarget, searchOperation
-    ) { blockPos: BlockPos? -> blockPos }
-  }
+  private fun executeSearchWithLogging(
+    searchTarget: Any,
+    searchOperation: Supplier<BlockPos?>,
+  ): BlockPos? = executeSearchWithLogging(searchTarget, searchOperation) { blockPos: BlockPos? -> blockPos }
 
   private fun <T> executeSearchWithLogging(
     searchTarget: Any,
     searchOperation: Supplier<T>,
-    positionExtractor: Function<T, BlockPos?>
+    positionExtractor: Function<T, BlockPos?>,
   ): T? {
-    ALConstants.logInfo("Trying to locate {}", searchTarget)
+    LOG.info("Trying to locate {}", searchTarget)
     val start = System.nanoTime()
     val result: T? = searchOperation.get()
     val duration = Duration.ofNanos(System.nanoTime() - start)
-    val durationMillis = duration[ChronoUnit.MILLIS]
+    val durationMillis = duration.toMillis()
 
     if (result != null) {
       val pos = positionExtractor.apply(result)
-      ALConstants.logInfo("Found {} at {} (took {}ms or {})", searchTarget, pos, durationMillis, duration)
+      LOG.info("Found {} at {} (took {}ms or {})", searchTarget, pos, durationMillis, duration)
     } else {
-      ALConstants.logInfo("No {} found (took {}ms or {})", searchTarget, durationMillis, duration)
+      LOG.info("No {} found (took {}ms or {})", searchTarget, durationMillis, duration)
     }
 
     return result
@@ -259,7 +283,7 @@ object AsyncLocator {
   data class LocateTask<T>(
     val server: MinecraftServer,
     val completableFuture: CompletableFuture<T>,
-    val taskFuture: Future<*>
+    val taskFuture: Future<*>,
   ) {
     /**
      * Helper function that calls [CompletableFuture.thenAccept] with the given action.

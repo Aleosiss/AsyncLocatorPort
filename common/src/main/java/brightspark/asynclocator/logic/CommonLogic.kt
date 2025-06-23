@@ -1,5 +1,6 @@
 package brightspark.asynclocator.logic
 
+import brightspark.asynclocator.AsyncLocatorMod.MOD_ID
 import brightspark.asynclocator.mixins.MapItemAccess
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
@@ -22,42 +23,39 @@ import java.util.function.Consumer
 
 object CommonLogic {
   const val MAP_HOVER_NAME_KEY: String = "menu.working"
-  const val KEY_LOCATING: String = "asynclocator.locating"
-  const val KEY_LOCATING_MANAGED: String = KEY_LOCATING + ".managed"
+  const val KEY_LOCATING: String = "$MOD_ID.locating"
+  const val KEY_LOCATING_MANAGED: String = "$KEY_LOCATING.managed"
 
   /**
    * Creates an empty "Filled Map", with a hover tooltip name stating that it's locating a feature.
    *
    * @return The ItemStack
    */
+  @JvmStatic
   fun createEmptyMap(): ItemStack {
-    val stack = ItemStack(Items.FILLED_MAP)
-    stack.set(
-      DataComponents.ITEM_NAME, Component.translatable(
-        MAP_HOVER_NAME_KEY
-      )
-    )
+    val stack =
+      ItemStack(Items.FILLED_MAP)
+        .apply { set(DataComponents.ITEM_NAME, Component.translatable(MAP_HOVER_NAME_KEY)) }
 
-    val customData = CompoundTag()
-    customData.putByte(KEY_LOCATING, 1.toByte())
-    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customData))
+    val customData =
+      CompoundTag().apply {
+        putByte(KEY_LOCATING, 1.toByte())
+      }
 
-    return stack
+    return stack.apply { set(DataComponents.CUSTOM_DATA, CustomData.of(customData)) }
   }
 
+  @JvmStatic
   fun createEmptyManagedMap(): ItemStack {
-    val stack = ItemStack(Items.FILLED_MAP)
-    stack.set(
-      DataComponents.ITEM_NAME, Component.translatable(
-        MAP_HOVER_NAME_KEY
-      )
-    )
+    val stack =
+      ItemStack(Items.FILLED_MAP)
+        .apply { set(DataComponents.ITEM_NAME, Component.translatable(MAP_HOVER_NAME_KEY)) }
 
-    val customData = CompoundTag()
-    customData.putUUID(KEY_LOCATING_MANAGED, UUID.randomUUID())
-    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customData))
+    val customData =
+      CompoundTag()
+        .apply { putUUID(KEY_LOCATING_MANAGED, UUID.randomUUID()) }
 
-    return stack
+    return stack.apply { set(DataComponents.CUSTOM_DATA, CustomData.of(customData)) }
   }
 
   /**
@@ -67,6 +65,7 @@ object CommonLogic {
    * @param stack The stack to check.
    * @return True if the stack is an empty FILLED_MAP awaiting to be populated with location data.
    */
+  @JvmStatic
   fun isEmptyPendingMap(stack: ItemStack): Boolean {
     if (!stack.`is`(Items.FILLED_MAP)) {
       return false
@@ -86,13 +85,14 @@ object CommonLogic {
    * @param destinationType The map feature type
    * @param displayName     The hover tooltip display name of the ItemStack
    */
+  @JvmStatic
   fun updateMap(
     mapStack: ItemStack,
     level: ServerLevel,
     pos: BlockPos,
     scale: Int,
-    destinationType: Holder<MapDecorationType?>,
-    displayName: String?
+    destinationType: Holder<MapDecorationType>,
+    displayName: String?,
   ) {
     updateMap(mapStack, level, pos, scale, destinationType, Component.translatable(displayName))
   }
@@ -105,25 +105,16 @@ object CommonLogic {
    * @param pos             The feature position
    * @param scale           The map scale
    * @param destinationType The map feature type
-   * @param displayName     The hover tooltip display name of the ItemStack
-   */
-  /**
-   * Updates the map stack with all the given data.
-   *
-   * @param mapStack        The map ItemStack to update
-   * @param level           The ServerLevel
-   * @param pos             The feature position
-   * @param scale           The map scale
-   * @param destinationType The map feature type
    */
   @JvmOverloads
+  @JvmStatic
   fun updateMap(
     mapStack: ItemStack,
     level: ServerLevel,
     pos: BlockPos,
     scale: Int,
-    destinationType: Holder<MapDecorationType?>,
-    displayName: Component? = null as Component?
+    destinationType: Holder<MapDecorationType>,
+    displayName: Component? = null,
   ) {
     val mapId = MapItemAccess.callCreateNewSavedData(level, pos.x, pos.z, scale, true, true, level.dimension())
     mapStack.set(DataComponents.MAP_ID, mapId)
@@ -148,14 +139,20 @@ object CommonLogic {
    * Broadcasts slot changes to all players that have the chest container open.
    * Won't do anything if the BlockEntity isn't an instance of [ChestBlockEntity].
    */
-  fun broadcastChestChanges(level: ServerLevel, be: BlockEntity) {
+  @JvmStatic
+  fun broadcastChestChanges(
+    level: ServerLevel,
+    be: BlockEntity,
+  ) {
     if (be !is ChestBlockEntity) return
 
-    level.players().forEach(Consumer { player: ServerPlayer ->
-      val container = player.containerMenu
-      if (container is ChestMenu && container.container === be) {
-        container.broadcastChanges()
-      }
-    })
+    level.players().forEach(
+      Consumer { player: ServerPlayer ->
+        val container = player.containerMenu
+        if (container is ChestMenu && container.container === be) {
+          container.broadcastChanges()
+        }
+      },
+    )
   }
 }

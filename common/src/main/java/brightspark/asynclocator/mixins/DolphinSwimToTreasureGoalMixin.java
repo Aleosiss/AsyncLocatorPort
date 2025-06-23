@@ -1,6 +1,5 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
 import brightspark.asynclocator.AsyncLocator;
 import brightspark.asynclocator.AsyncLocator.LocateTask;
 import brightspark.asynclocator.platform.Services;
@@ -11,11 +10,14 @@ import net.minecraft.world.entity.animal.Dolphin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+import static brightspark.asynclocator.AsyncLocatorMod.INSTANCE;
 
 @Mixin(targets = "net.minecraft.world.entity.animal.Dolphin$DolphinSwimToTreasureGoal")
 public class DolphinSwimToTreasureGoalMixin {
@@ -42,9 +44,9 @@ public class DolphinSwimToTreasureGoalMixin {
 		locals = LocalCapture.CAPTURE_FAILSOFT
 	)
 	public void findTreasureAsync(CallbackInfo ci, ServerLevel level, BlockPos blockpos) {
-		if (!Services.CONFIG.dolphinTreasureEnabled()) return;
+		if (!INSTANCE.getCONFIG().getLocateCommandEnabled().get()) return;
 
-		ALConstants.logDebug("Intercepted DolphinSwimToTreasureGoal#start call");
+		INSTANCE.getLOGGER().info("Intercepted DolphinSwimToTreasureGoal#start call");
 		handleFindTreasureAsync(level, blockpos);
 		ci.cancel();
 	}
@@ -60,7 +62,7 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void continueToUseIfLocatingTreasure(CallbackInfoReturnable<Boolean> cir) {
 		if (locateTask != null) {
-			ALConstants.logDebug("Locating task ongoing - returning true for continueToUse()");
+			INSTANCE.getLOGGER().debug("Locating task ongoing - returning true for continueToUse()");
 			cir.setReturnValue(true);
 		}
 	}
@@ -71,7 +73,7 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void stopLocatingTreasure(CallbackInfo ci) {
 		if (locateTask != null) {
-			ALConstants.logDebug("Locating task ongoing - cancelling during stop()");
+			INSTANCE.getLOGGER().debug("Locating task ongoing - cancelling during stop()");
 			locateTask.cancel();
 			locateTask = null;
 		}
@@ -88,24 +90,27 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void skipTickingIfLocatingTreasure(CallbackInfo ci) {
 		if (locateTask != null) {
-			ALConstants.logDebug("Locating task ongoing - skipping tick()");
+			INSTANCE.getLOGGER().debug("Locating task ongoing - skipping tick()");
 			ci.cancel();
 		}
 	}
 
+	@Unique
 	private void handleFindTreasureAsync(ServerLevel level, BlockPos blockPos) {
-		locateTask = AsyncLocator.locateStructure(level, StructureTags.DOLPHIN_LOCATED, blockPos, 50, false)
-			.thenOnServerThread(pos -> handleLocationFound(level, pos));
+		locateTask = AsyncLocator.INSTANCE
+				.locateStructure(level, StructureTags.DOLPHIN_LOCATED, blockPos, 50, false)
+				.thenOnServerThread(pos -> handleLocationFound(level, pos));
 	}
 
+	@Unique
 	private void handleLocationFound(ServerLevel level, BlockPos pos) {
 		locateTask = null;
 		if (pos != null) {
-			ALConstants.logInfo("Location found - updating dolphin treasure pos");
+			INSTANCE.getLOGGER().info("Location found - updating dolphin treasure pos");
 			dolphin.setTreasurePos(pos);
 			level.broadcastEntityEvent(dolphin, (byte) 38);
 		} else {
-			ALConstants.logInfo("No location found - marking dolphin as stuck");
+			INSTANCE.getLOGGER().info("No location found - marking dolphin as stuck");
 			stuck = true;
 		}
 	}

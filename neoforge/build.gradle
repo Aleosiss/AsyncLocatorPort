@@ -1,5 +1,6 @@
 plugins {
     id 'com.github.johnrengelman.shadow'
+    id 'org.jetbrains.kotlin.jvm'
 }
 
 architectury {
@@ -26,18 +27,27 @@ configurations {
 
 repositories {
     maven {
+        name = "Kotlin for Forge"
+        setUrl("https://thedarkcolour.github.io/KotlinForForge/")
+    }
+    maven {
         name = 'NeoForged'
         url = 'https://maven.neoforged.net/releases'
     }
+    mavenCentral()
 }
 
 dependencies {
+    // Since Kotlin is its own JVM language with its own standard library, a custom language loader needs to be used, i.e. KFF
+    implementation("thedarkcolour:kotlinforforge-neoforge:$rootProject.neoforge_kotlin_version")
+
     neoForge "net.neoforged:neoforge:$rootProject.neoforge_version"
 
     modImplementation "dev.architectury:architectury-neoforge:$rootProject.architectury_api_version"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
 processResources {
@@ -55,4 +65,7 @@ shadowJar {
 
 remapJar {
     input.set shadowJar.archiveFile
+}
+kotlin {
+    jvmToolchain(21)
 }

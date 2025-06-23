@@ -1,21 +1,22 @@
 package brightspark.asynclocator
 
-import brightspark.asynclocator.platform.Services
+import brightspark.asynclocator.AsyncLocatorMod.CONFIG
+import brightspark.asynclocator.extensions.LOG
 
 object AsyncLocatorModCommon {
   fun printConfigs() {
-    val config = Services.CONFIG
-    ALConstants.logInfo(
+    val config = CONFIG
+    LOG.info(
       """
             Configs:
-            Locator Threads: ${config.locatorThreads()}
-            Remove Offer: ${config.removeOffer()}
-            Dolphin Treasure Enabled: ${config.dolphinTreasureEnabled()}
-            Eye Of Ender Enabled: ${config.eyeOfEnderEnabled()}
-            Exploration Map Enabled: ${config.explorationMapEnabled()}
-            Locate Command Enabled: ${config.locateCommandEnabled()}
-            Villager Trade Enabled: ${config.villagerTradeEnabled()}
-            """.trimIndent()
+            Locator Threads: ${config.locatorThreads.get()}
+            Remove Offer: ${config.removeOffer.get()}
+            Dolphin Treasure Enabled: ${config.dolphinTreasureEnabled.get()}
+            Eye Of Ender Enabled: ${config.eyeOfEnderEnabled.get()}
+            Exploration Map Enabled: ${config.explorationMapEnabled.get()}
+            Locate Command Enabled: ${config.locateCommandEnabled.get()}
+            Villager Trade Enabled: ${config.villagerTradeEnabled.get()}
+      """.trimIndent(),
     )
   }
 }

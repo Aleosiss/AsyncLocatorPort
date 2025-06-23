@@ -1,6 +1,6 @@
 package brightspark.asynclocator.mixins;
 
-import brightspark.asynclocator.ALConstants;
+import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.logic.EnderEyeItemLogic;
 import brightspark.asynclocator.platform.Services;
 import net.minecraft.advancements.critereon.UsedEnderEyeTrigger;
@@ -25,6 +25,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
+import static brightspark.asynclocator.AsyncLocatorMod.INSTANCE;
+
 @Mixin(EnderEyeItem.class)
 public class EnderEyeItemMixin {
 	/*
@@ -45,8 +47,8 @@ public class EnderEyeItemMixin {
 		int pRadius,
 		boolean pSkipExistingChunks
 	) {
-		if (Services.CONFIG.eyeOfEnderEnabled()) {
-			ALConstants.logDebug("Intercepted EnderEyeItem#use call");
+		if (INSTANCE.getCONFIG().getEyeOfEnderEnabled().get()) {
+			AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted EnderEyeItem#use call");
 			return BlockPos.ZERO;
 		} else {
 			// Normal behaviour
@@ -74,7 +76,7 @@ public class EnderEyeItemMixin {
 		BlockPos blockpos,
 		EyeOfEnder eyeofender
 	) {
-		if (!Services.CONFIG.eyeOfEnderEnabled()) return;
+		if (!INSTANCE.getCONFIG().getEyeOfEnderEnabled().get()) return;
 		//noinspection DataFlowIssue
 		EnderEyeItemLogic.locateAsync(serverlevel, pPlayer, eyeofender, (EnderEyeItem) (Object) this);
 	}
@@ -87,7 +89,7 @@ public class EnderEyeItemMixin {
 		)
 	)
 	public void eyeOfEnderSignalTo(EyeOfEnder eyeOfEnder, BlockPos blockpos) {
-		if (!Services.CONFIG.eyeOfEnderEnabled())
+		if (!INSTANCE.getCONFIG().getEyeOfEnderEnabled().get())
 			eyeOfEnder.signalTo(blockpos);
 		// Else do nothing - we'll do this later if a location is found
 	}
@@ -100,7 +102,7 @@ public class EnderEyeItemMixin {
 		)
 	)
 	public void triggerUsedEnderEyeCriteria(UsedEnderEyeTrigger trigger, ServerPlayer player, BlockPos pos) {
-		if (!Services.CONFIG.eyeOfEnderEnabled())
+		if (!INSTANCE.getCONFIG().getEyeOfEnderEnabled().get())
 			trigger.trigger(player, pos);
 		// Else do nothing - we'll do this later if a location is found
 	}
@@ -113,7 +115,7 @@ public class EnderEyeItemMixin {
 		)
 	)
 	public void playerAwardStat(Player player, Stat<?> pStat) {
-		if (!Services.CONFIG.eyeOfEnderEnabled())
+		if (!INSTANCE.getCONFIG().getEyeOfEnderEnabled().get())
 			player.awardStat(pStat);
 		// Else do nothing - we'll do this later if a location is found
 	}

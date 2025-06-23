@@ -1,5 +1,6 @@
 package brightspark.asynclocator
 
+import brightspark.asynclocator.extensions.LOG
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.resources.ResourceKey
@@ -24,15 +25,21 @@ class MapManager {
   /**
    * Represents a locate operation in the map manager.
    */
-  class LocateOperation(
-    var levelKey: ResourceKey<Level>,
-    var scale: Int,
-    var destinationType: Holder<MapDecorationType>
+  data class LocateOperation(
+    @JvmField var levelKey: ResourceKey<Level>,
+    @JvmField var scale: Int,
+    @JvmField var destinationType: Holder<MapDecorationType>,
   ) {
+    @JvmField
     var initialized: Boolean = false
+
+    @JvmField
     var displayName: String? = null
 
+    @JvmField
     var completed: Boolean = false
+
+    @JvmField
     var pos: BlockPos? = null
   }
 
@@ -47,7 +54,10 @@ class MapManager {
     LOCATE_OPERATIONS.remove(uuid)
   }
 
-  fun initializeLocateOperation(uuid: UUID, displayName: String?) {
+  fun initializeLocateOperation(
+    uuid: UUID,
+    displayName: String,
+  ) {
     val operation = LOCATE_OPERATIONS[uuid]
     checkNotNull(operation) { "No locate operation found for UUID: $uuid" }
 
@@ -57,12 +67,18 @@ class MapManager {
     LOCATE_OPERATIONS[uuid] = operation
   }
 
-  fun addLocateOperation(uuid: UUID, operation: LocateOperation) {
+  fun addLocateOperation(
+    uuid: UUID,
+    operation: LocateOperation,
+  ) {
     check(!LOCATE_OPERATIONS.containsKey(uuid)) { "Locate operation already exists for UUID: $uuid" }
     LOCATE_OPERATIONS[uuid] = operation
   }
 
-  fun completeLocateOperation(asyncId: UUID, pos: BlockPos?) {
+  fun completeLocateOperation(
+    asyncId: UUID,
+    pos: BlockPos?,
+  ) {
     val operation = LOCATE_OPERATIONS[asyncId]
     checkNotNull(operation) { "No locate operation found for UUID: $asyncId" }
 
@@ -70,19 +86,20 @@ class MapManager {
     operation.pos = pos
 
     LOCATE_OPERATIONS[asyncId] = operation
-    ALConstants.logInfo("Locate operation completed for UUID: {}, position: {}", asyncId, pos)
+    LOG.info("Locate operation completed for UUID: {}, position: {}", asyncId, pos)
   }
 
   companion object {
     private val LOCATE_OPERATIONS = HashMap<UUID, LocateOperation>()
-    val instance: MapManager = MapManager()
 
-    private fun getName(`is`: ItemStack): String {
-      return `is`.hoverName.string
-    }
+    @JvmStatic
+    val INSTANCE: MapManager = MapManager()
 
-    private fun getServerLevel(itemLevel: Level, levelResourceKey: ResourceKey<Level>): ServerLevel? {
-      return itemLevel.server!!.getLevel(levelResourceKey)
-    }
+    private fun getName(itemStack: ItemStack): String = itemStack.hoverName.string
+
+    private fun getServerLevel(
+      itemLevel: Level,
+      levelResourceKey: ResourceKey<Level>,
+    ): ServerLevel? = itemLevel.server!!.getLevel(levelResourceKey)
   }
 }
