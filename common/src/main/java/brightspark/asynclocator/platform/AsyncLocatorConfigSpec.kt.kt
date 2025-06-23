@@ -75,14 +75,14 @@ object AsyncLocatorConfigSpec {
      */
     val biomeSearchRadius: ModConfigSpec.ConfigValue<Int> = builder
       .comment("The radius in chunks in which to search for biomes when locating them.")
-      .defineInRange("biomeSearchRadius", 400, 1, 100)
+      .defineInRange("biomeSearchRadius", 400, 1, Int.MAX_VALUE)
 
     /**
      * The radius in chunks in which to search for structures when locating them.
      */
     val structureSearchRadius: ModConfigSpec.ConfigValue<Int> = builder
       .comment("The radius in chunks in which to search for structures when locating them.")
-      .defineInRange("structureSearchRadius", 400, 1, 100)
+      .defineInRange("structureSearchRadius", 400, 1, Int.MAX_VALUE)
   }
 
   private val pair: ApachePair<AsyncLocatorConfig, ModConfigSpec> = ModConfigSpec.Builder()
