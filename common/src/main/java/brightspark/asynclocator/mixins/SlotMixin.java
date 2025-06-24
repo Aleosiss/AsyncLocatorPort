@@ -26,7 +26,7 @@ public abstract class SlotMixin {
 	)
 	public void preventPickupOfPendingExplorationMap(Player player, CallbackInfoReturnable<Boolean> cir) {
 		if (INSTANCE.getCONFIG().getExplorationMapEnabled().get() && CommonLogic.isEmptyPendingMap(getItem())) {
-			AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted Slot#mayPickup call");
+			AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted Slot#mayPickup call");
 			cir.setReturnValue(false);
 		}
 	}

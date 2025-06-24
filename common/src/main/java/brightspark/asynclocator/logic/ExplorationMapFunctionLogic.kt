@@ -25,7 +25,7 @@ import java.util.UUID
 
 object ExplorationMapFunctionLogic {
   // I'd like to think that structure locating shouldn't take *this* long
-  private val MAP_NAME_CACHE: Cache<ItemStack, Component> =
+  val MAP_NAME_CACHE: Cache<ItemStack, Component> =
     CacheBuilder
       .newBuilder()
       .expireAfterWrite(Duration.ofMinutes(CONFIG.mapNameCacheExpiryMinutes.get().toLong()))
@@ -34,9 +34,9 @@ object ExplorationMapFunctionLogic {
   @JvmStatic
   fun cacheName(stack: ItemStack, name: Component) = MAP_NAME_CACHE.put(stack, name)
 
-  fun getCachedName(stack: ItemStack): Component {
+  fun getCachedName(stack: ItemStack, invalidate: Boolean = true): Component {
     val name = MAP_NAME_CACHE.getIfPresent(stack) ?: Component.translatable("item.minecraft.map")
-    MAP_NAME_CACHE.invalidate(stack)
+    if(invalidate) { MAP_NAME_CACHE.invalidate(stack) }
     return name
   }
 
@@ -72,6 +72,7 @@ object ExplorationMapFunctionLogic {
   }
 
   fun updateMapAsync(
+    initialMapItemStack: ItemStack,
     level: ServerLevel,
     blockPos: BlockPos,
     scale: Int,
@@ -81,6 +82,10 @@ object ExplorationMapFunctionLogic {
     destination: TagKey<Structure>,
   ): ItemStack {
     val mapStack = createEmptyManagedMap()
+
+    //val originalName = initialMapItemStack.hoverName
+    //mapStack.set(DataComponents.ITEM_NAME, originalName)
+
     val asyncId = mapStack
       .get(DataComponents.CUSTOM_DATA)!!
       .copyTag()

@@ -49,7 +49,7 @@ public class LocateCommandMixin {
 
 		CommandSource source = ((CommandSourceStackAccess) sourceStack).getSource();
 		if (source instanceof ServerPlayer || source instanceof MinecraftServer) {
-			INSTANCE.getLOGGER().debug("Intercepted LocateCommand#locate structure call");
+			INSTANCE.getLOGGER().info("Intercepted LocateCommand#locate structure call");
 			LocateCommandLogic.INSTANCE.locateStructureAsync(sourceStack, structureResult, holderset);
 			cir.setReturnValue(0);
 		}
@@ -72,7 +72,7 @@ public class LocateCommandMixin {
 
 		CommandSource source = ((CommandSourceStackAccess) sourceStack).getSource();
 		if (source instanceof ServerPlayer || source instanceof MinecraftServer) {
-			INSTANCE.getLOGGER().debug("Intercepted LocateCommand#locate biome call");
+			INSTANCE.getLOGGER().info("Intercepted LocateCommand#locate biome call");
 			LocateCommandLogic.INSTANCE.locateBiomeAsync(sourceStack, biomeResult);
 			cir.setReturnValue(0);
 		}

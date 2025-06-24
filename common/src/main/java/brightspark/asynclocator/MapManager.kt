@@ -1,6 +1,7 @@
 package brightspark.asynclocator
 
 import brightspark.asynclocator.extensions.LOG
+import net.minecraft.commands.arguments.OperationArgument.operation
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.resources.ResourceKey
@@ -43,11 +44,8 @@ class MapManager {
     var pos: BlockPos? = null
   }
 
-  fun getLocateOperation(uuid: UUID): LocateOperation {
-    val operation = LOCATE_OPERATIONS[uuid]
-    checkNotNull(operation) { "No locate operation found for UUID: $uuid" }
-
-    return operation
+  fun getLocateOperation(uuid: UUID): LocateOperation? {
+   return LOCATE_OPERATIONS[uuid]
   }
 
   fun removeLocateOperation(uuid: UUID) {

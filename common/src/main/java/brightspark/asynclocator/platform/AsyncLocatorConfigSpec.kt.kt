@@ -68,7 +68,7 @@ object AsyncLocatorConfigSpec {
         "The number of minutes before the map name cache expires. " +
           "The cache is used to look up the name of a map once it's been located."
       )
-      .defineInRange("mapNameCacheExpiryMinutes", 5, 1, 1440)
+      .defineInRange("mapNameCacheExpiryMinutes", 60, 1, 1440)
 
     /**
      * The radius in chunks in which to search for biomes when locating them.

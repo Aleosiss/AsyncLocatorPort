@@ -65,7 +65,7 @@ public class TreasureMapForEmeraldsMixin {
 	) {
 		if (!INSTANCE.getCONFIG().getVillagerTradeEnabled().get()) return;
 
-		AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted TreasureMapForEmeralds#getOffer call");
+		AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted TreasureMapForEmeralds#getOffer call");
 		MerchantOffer offer = MerchantLogic.INSTANCE.updateMapAsync(
 				pTrader,
 				emeraldCost,

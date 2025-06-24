@@ -3,6 +3,7 @@ package brightspark.asynclocator.mixins;
 import brightspark.asynclocator.AsyncLocatorMod;
 import brightspark.asynclocator.MapManager;
 import brightspark.asynclocator.logic.CommonLogic;
+import brightspark.asynclocator.logic.ExplorationMapFunctionLogic;
 import brightspark.asynclocator.logic.MerchantLogic;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -21,6 +22,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Locale;
 
 import static brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING_MANAGED;
 import static brightspark.asynclocator.logic.CommonLogic.MAP_HOVER_NAME_KEY;
@@ -58,7 +61,14 @@ public class MapItemMixin {
             // one-time initialization to set the name of the map
             if (!locate.initialized) {
                 AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: Locate operation not initialized for asyncId: {}, initializing now.", asyncId);
-                mapManager.initializeLocateOperation(asyncId, getName(is));
+                var name = getName(is);
+                // if the name is the default "menu.working" then get the original name from the name cache
+                if(name.equals(Component.translatable(MAP_HOVER_NAME_KEY).getString())) {
+                    name = ExplorationMapFunctionLogic.INSTANCE.getCachedName(is, false).getString();
+                }
+
+
+                mapManager.initializeLocateOperation(asyncId, name);
                 is.set(DataComponents.ITEM_NAME, Component.translatable(MAP_HOVER_NAME_KEY));
             }
 

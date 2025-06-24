@@ -29,7 +29,7 @@ public class SetNameFunctionMixin {
     )
     public Object deferSetName(ItemStack stack, DataComponentType dataComponentType, Object name) {
         if (INSTANCE.getCONFIG().getExplorationMapEnabled().get() && CommonLogic.isEmptyPendingMap(stack)) {
-            AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted SetNameFunction#run call");
+            AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted SetNameFunction#run call");
             ExplorationMapFunctionLogic.cacheName(stack, (Component) name);
         } else
             stack.set(dataComponentType, name);

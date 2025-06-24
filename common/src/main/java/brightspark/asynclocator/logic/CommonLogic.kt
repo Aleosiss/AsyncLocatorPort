@@ -2,6 +2,8 @@ package brightspark.asynclocator.logic
 
 import brightspark.asynclocator.AsyncLocatorMod.MOD_ID
 import brightspark.asynclocator.mixins.MapItemAccess
+import brightspark.asynclocator.extensions.CustomDataExtensions.hasAsyncLocatorData
+import brightspark.asynclocator.extensions.CustomDataExtensions.removeAsyncLocatorData
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.component.DataComponents
@@ -72,7 +74,7 @@ object CommonLogic {
     }
 
     val customData = stack.get(DataComponents.CUSTOM_DATA)
-    return customData != null && customData.contains(KEY_LOCATING)
+    return customData != null && customData.hasAsyncLocatorData()
   }
 
   /**
@@ -124,8 +126,8 @@ object CommonLogic {
 
     val currentData = mapStack.get(DataComponents.CUSTOM_DATA)
     if (currentData != null) {
-      val newTag = currentData.copyTag()
-      newTag.remove(KEY_LOCATING)
+      val newTag = currentData.copyTag()!!
+      newTag.removeAsyncLocatorData()
 
       if (newTag.isEmpty) {
         mapStack.remove(DataComponents.CUSTOM_DATA)

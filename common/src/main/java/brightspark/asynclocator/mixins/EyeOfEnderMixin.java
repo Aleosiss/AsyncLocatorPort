@@ -32,7 +32,7 @@ public class EyeOfEnderMixin implements EyeOfEnderData {
 	)
 	public void skipTick(CallbackInfo ci) {
 		if (locateTaskOngoing) {
-			AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted EyeOfEnder#tick call - skipping tick");
+			AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted EyeOfEnder#tick call - skipping tick");
 			ci.cancel();
 		}
 	}

@@ -63,8 +63,9 @@ public class ExplorationMapFunctionMixin {
 	) {
 		if (!INSTANCE.getCONFIG().getExplorationMapEnabled().get()) return;
 
-		AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted ExplorationMapFunction#run call");
+		AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted ExplorationMapFunction#run call");
 		ItemStack mapStack = ExplorationMapFunctionLogic.INSTANCE.updateMapAsync(
+				pStack,
 				serverlevel,
 				BlockPos.containing(vec3),
 				zoom,

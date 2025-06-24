@@ -62,7 +62,7 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void continueToUseIfLocatingTreasure(CallbackInfoReturnable<Boolean> cir) {
 		if (locateTask != null) {
-			INSTANCE.getLOGGER().debug("Locating task ongoing - returning true for continueToUse()");
+			INSTANCE.getLOGGER().info("Locating task ongoing - returning true for continueToUse()");
 			cir.setReturnValue(true);
 		}
 	}
@@ -73,7 +73,7 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void stopLocatingTreasure(CallbackInfo ci) {
 		if (locateTask != null) {
-			INSTANCE.getLOGGER().debug("Locating task ongoing - cancelling during stop()");
+			INSTANCE.getLOGGER().info("Locating task ongoing - cancelling during stop()");
 			locateTask.cancel();
 			locateTask = null;
 		}
@@ -90,7 +90,7 @@ public class DolphinSwimToTreasureGoalMixin {
 	)
 	public void skipTickingIfLocatingTreasure(CallbackInfo ci) {
 		if (locateTask != null) {
-			INSTANCE.getLOGGER().debug("Locating task ongoing - skipping tick()");
+			INSTANCE.getLOGGER().info("Locating task ongoing - skipping tick()");
 			ci.cancel();
 		}
 	}

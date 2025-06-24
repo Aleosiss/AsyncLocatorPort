@@ -48,7 +48,7 @@ public class EnderEyeItemMixin {
 		boolean pSkipExistingChunks
 	) {
 		if (INSTANCE.getCONFIG().getEyeOfEnderEnabled().get()) {
-			AsyncLocatorMod.INSTANCE.getLOGGER().debug("Intercepted EnderEyeItem#use call");
+			AsyncLocatorMod.INSTANCE.getLOGGER().info("Intercepted EnderEyeItem#use call");
 			return BlockPos.ZERO;
 		} else {
 			// Normal behaviour
