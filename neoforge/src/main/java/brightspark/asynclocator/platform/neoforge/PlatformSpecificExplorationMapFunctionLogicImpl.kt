@@ -5,6 +5,7 @@ import brightspark.asynclocator.extensions.LOG
 import brightspark.asynclocator.logic.CommonLogic.broadcastChestChanges
 import brightspark.asynclocator.logic.CommonLogic.updateMap
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.core.Holder
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
@@ -60,7 +61,7 @@ object PlatformSpecificExplorationMapFunctionLogicImpl {
   ) {
     val be = level.getBlockEntity(invPos)
     if (be != null) {
-      val itemHandler = level.getCapability(Capabilities.ItemHandler.BLOCK, invPos, null)
+      val itemHandler = level.getCapability(Capabilities.ItemHandler.BLOCK, invPos, Direction.valueOf(""))
       if (itemHandler != null) {
         for (i in 0..<itemHandler.slots) {
           val slotStack = itemHandler.getStackInSlot(i)

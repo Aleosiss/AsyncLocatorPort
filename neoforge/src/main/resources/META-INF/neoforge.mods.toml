@@ -9,7 +9,6 @@ version = "${version}"
 displayName = "Async Locator"
 authors = ""
 description = '''
-
 '''
 #logoFile = ""
 
