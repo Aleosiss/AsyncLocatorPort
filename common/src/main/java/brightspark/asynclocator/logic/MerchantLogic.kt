@@ -3,7 +3,7 @@ package brightspark.asynclocator.logic
 import brightspark.asynclocator.AsyncLocator.locateStructure
 import brightspark.asynclocator.AsyncLocatorMod.CONFIG
 import brightspark.asynclocator.extensions.LOG
-import brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING_MANAGED
+import brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING
 import brightspark.asynclocator.logic.CommonLogic.updateMap
 import brightspark.asynclocator.mixins.MerchantOfferAccess
 import net.minecraft.core.BlockPos
@@ -54,7 +54,7 @@ object MerchantLogic {
   fun tickMerchantOffers(level: ServerLevel, merchant: AbstractVillager) = merchant.offers
     .map { it.result }
     .filter { it.`is`(Items.FILLED_MAP) }
-    .filter { it.get(DataComponents.CUSTOM_DATA)?.contains(KEY_LOCATING_MANAGED) == true }
+    .filter { it.get(DataComponents.CUSTOM_DATA)?.contains(KEY_LOCATING) == true }
     .forEach { it.inventoryTick(level, merchant, -1, false) }
 
   private fun handleLocationFound(
@@ -133,7 +133,7 @@ object MerchantLogic {
     trader: Entity, emeraldCost: Int, maxUses: Int, villagerXp: Int, task: MapUpdateTask
   ): MerchantOffer? {
     if (trader is AbstractVillager) {
-      val mapStack = CommonLogic.createEmptyMap()
+      val mapStack = CommonLogic.createEmptyManagedMap()
       task.apply(trader.level() as ServerLevel, trader, mapStack)
 
       return MerchantOffer(

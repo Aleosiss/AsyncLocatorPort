@@ -4,10 +4,11 @@ import brightspark.asynclocator.AsyncLocator.locateStructure
 import brightspark.asynclocator.AsyncLocatorMod.CONFIG
 import brightspark.asynclocator.MapManager
 import brightspark.asynclocator.MapManager.LocateOperation
+import brightspark.asynclocator.extensions.CustomDataExtensions.getAsyncId
 import brightspark.asynclocator.extensions.LOG
-import brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING_MANAGED
+import brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING
 import brightspark.asynclocator.logic.CommonLogic.createEmptyManagedMap
-import brightspark.asynclocator.platform.Services
+import brightspark.asynclocator.platform.PlatformSpecificExplorationMapFunctionLogic
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import net.minecraft.core.BlockPos
@@ -24,19 +25,30 @@ import java.time.Duration
 import java.util.UUID
 
 object ExplorationMapFunctionLogic {
-  // I'd like to think that structure locating shouldn't take *this* long
-  val MAP_NAME_CACHE: Cache<ItemStack, Component> =
+  private val MAP_NAME_CACHE: Cache<UUID, Component> =
     CacheBuilder
       .newBuilder()
       .expireAfterWrite(Duration.ofMinutes(CONFIG.mapNameCacheExpiryMinutes.get().toLong()))
       .build()
 
   @JvmStatic
-  fun cacheName(stack: ItemStack, name: Component) = MAP_NAME_CACHE.put(stack, name)
+  fun cacheName(stack: ItemStack, name: Component) = cacheName(stack.getAsyncId()!!, name)
+
+  @JvmStatic
+  fun cacheName(asyncId: UUID, name: Component) {
+    if (name == Component.translatable("item.minecraft.map")) {
+      LOG.warn("Attempted to cache default map name for asyncId: $asyncId")
+      return
+    }
+
+    MAP_NAME_CACHE.put(asyncId, name)
+  }
 
   fun getCachedName(stack: ItemStack, invalidate: Boolean = true): Component {
-    val name = MAP_NAME_CACHE.getIfPresent(stack) ?: Component.translatable("item.minecraft.map")
-    if(invalidate) { MAP_NAME_CACHE.invalidate(stack) }
+    val name = MAP_NAME_CACHE.getIfPresent(stack.getAsyncId()!!) ?: Component.translatable("item.minecraft.map")
+    if (invalidate) {
+      MAP_NAME_CACHE.invalidate(stack)
+    }
     return name
   }
 
@@ -53,12 +65,12 @@ object ExplorationMapFunctionLogic {
   ) {
     if (pos == null) {
       LOG.info("No location found - invalidating map stack")
-      Services.EXPLORATION_MAP_FUNCTION_LOGIC.invalidateMap(mapStack, level, invPos, asyncId)
+      PlatformSpecificExplorationMapFunctionLogic.invalidateMap(mapStack, level, invPos, asyncId)
     } else {
       LOG.info("Location found - updating treasure map in chest")
       // complete the operation in MapManager to close the loop
       MapManager.INSTANCE.completeLocateOperation(asyncId, pos)
-      Services.EXPLORATION_MAP_FUNCTION_LOGIC.updateMap(
+      PlatformSpecificExplorationMapFunctionLogic.updateMap(
         mapStack,
         level,
         pos,
@@ -83,13 +95,12 @@ object ExplorationMapFunctionLogic {
   ): ItemStack {
     val mapStack = createEmptyManagedMap()
 
-    //val originalName = initialMapItemStack.hoverName
-    //mapStack.set(DataComponents.ITEM_NAME, originalName)
-
     val asyncId = mapStack
       .get(DataComponents.CUSTOM_DATA)!!
       .copyTag()
-      .getUUID(KEY_LOCATING_MANAGED)
+      .getUUID(KEY_LOCATING)
+
+    cacheName(asyncId, initialMapItemStack.hoverName)
 
     // If the map is from a chest, we need to handle it differently
     val isFromChest = (level.getBlockEntity(blockPos) is ChestBlockEntity)

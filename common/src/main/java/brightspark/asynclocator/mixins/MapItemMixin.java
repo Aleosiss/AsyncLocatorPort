@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Locale;
 
-import static brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING_MANAGED;
+import static brightspark.asynclocator.logic.CommonLogic.KEY_LOCATING;
 import static brightspark.asynclocator.logic.CommonLogic.MAP_HOVER_NAME_KEY;
 
 @Mixin(MapItem.class)
@@ -40,11 +40,11 @@ public class MapItemMixin {
             if (!(is.getItem() instanceof MapItem)) return;
             var customData = is.get(DataComponents.CUSTOM_DATA);
             if (customData == null) return;
-            if (!customData.contains(KEY_LOCATING_MANAGED)) return;
+            if (!customData.contains(KEY_LOCATING)) return;
 
             // get our shit together
             CompoundTag newCustomData = customData.copyTag();
-            var asyncId = newCustomData.getUUID(KEY_LOCATING_MANAGED);
+            var asyncId = newCustomData.getUUID(KEY_LOCATING);
             var mapManager = MapManager.getINSTANCE();
 
             // get our locate
@@ -52,7 +52,7 @@ public class MapItemMixin {
             // if we can't find it, clean up this map
             if (locate == null) {
                 AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: No locate operation found for asyncId: {}", asyncId);
-                newCustomData.remove(KEY_LOCATING_MANAGED);
+                newCustomData.remove(KEY_LOCATING);
                 is.set(DataComponents.ITEM_NAME, Component.translatable("item.minecraft.map"));
                 is.set(DataComponents.CUSTOM_DATA, CustomData.of(newCustomData));
                 return;
@@ -64,7 +64,7 @@ public class MapItemMixin {
                 var name = getName(is);
                 // if the name is the default "menu.working" then get the original name from the name cache
                 if(name.equals(Component.translatable(MAP_HOVER_NAME_KEY).getString())) {
-                    name = ExplorationMapFunctionLogic.INSTANCE.getCachedName(is, false).getString();
+                    name = ExplorationMapFunctionLogic.INSTANCE.getCachedName(is, true).getString();
                 }
 
 
@@ -86,7 +86,7 @@ public class MapItemMixin {
             } else {
                 // if we don't have a position, we invalidate the map
                 AsyncLocatorMod.INSTANCE.getLOGGER().info("MapItemMixin#inventoryTick: Locate operation completed but no position found for asyncId: " + asyncId);
-                newCustomData.remove(KEY_LOCATING_MANAGED);
+                newCustomData.remove(KEY_LOCATING);
                 is.set(DataComponents.CUSTOM_DATA, CustomData.of(newCustomData));
                 if (entity instanceof Villager merchant) { MerchantLogic.invalidateMap(merchant, is); }
             }

@@ -1,9 +1,9 @@
 package brightspark.asynclocator.logic
 
 import brightspark.asynclocator.AsyncLocatorMod.MOD_ID
-import brightspark.asynclocator.mixins.MapItemAccess
 import brightspark.asynclocator.extensions.CustomDataExtensions.hasAsyncLocatorData
 import brightspark.asynclocator.extensions.CustomDataExtensions.removeAsyncLocatorData
+import brightspark.asynclocator.mixins.MapItemAccess
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.component.DataComponents
@@ -26,27 +26,15 @@ import java.util.function.Consumer
 object CommonLogic {
   const val MAP_HOVER_NAME_KEY: String = "menu.working"
   const val KEY_LOCATING: String = "$MOD_ID.locating"
-  const val KEY_LOCATING_MANAGED: String = "$KEY_LOCATING.managed"
 
   /**
    * Creates an empty "Filled Map", with a hover tooltip name stating that it's locating a feature.
    *
+   * The map has a custom data tag with a random UUID under the key [KEY_LOCATING], which can be used to
+   * look up the map later.
+   *
    * @return The ItemStack
    */
-  @JvmStatic
-  fun createEmptyMap(): ItemStack {
-    val stack =
-      ItemStack(Items.FILLED_MAP)
-        .apply { set(DataComponents.ITEM_NAME, Component.translatable(MAP_HOVER_NAME_KEY)) }
-
-    val customData =
-      CompoundTag().apply {
-        putByte(KEY_LOCATING, 1.toByte())
-      }
-
-    return stack.apply { set(DataComponents.CUSTOM_DATA, CustomData.of(customData)) }
-  }
-
   @JvmStatic
   fun createEmptyManagedMap(): ItemStack {
     val stack =
@@ -55,7 +43,7 @@ object CommonLogic {
 
     val customData =
       CompoundTag()
-        .apply { putUUID(KEY_LOCATING_MANAGED, UUID.randomUUID()) }
+        .apply { putUUID(KEY_LOCATING, UUID.randomUUID()) }
 
     return stack.apply { set(DataComponents.CUSTOM_DATA, CustomData.of(customData)) }
   }
